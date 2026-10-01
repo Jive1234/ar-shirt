@@ -21,4 +21,6 @@ export const CONFIG = {
 
   // ข้อความที่ลอยเหนือลายเสื้อ / Text floating above the print
   label: "Hello AR Shirt!",
+  // ⚠️ แก้ไฟล์ไหนแล้ว ให้เพิ่มเลข ?v= ใน index.html และ main.js ด้วย
+  // เพื่อไม่ให้มือถือใช้ไฟล์เก่าที่จำไว้ / bump ?v= after edits to bust phone caches
 };

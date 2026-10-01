@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MindARThree } from "mindar-image-three";
-import { CONFIG } from "./config.js";
+import { CONFIG } from "./config.js?v=2";
 
 const startScreen = document.getElementById("start-screen");
 const startButton = document.getElementById("start-button");
