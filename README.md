@@ -6,6 +6,8 @@
 A web AR page for a shirt: point a phone camera at the shirt print and a 3D model plus a text label appear on it.
 Plain static site (MindAR + three.js), no app install and no build step.
 
+> 🧪 Real-time webcam virtual try-on plan, Unity boilerplate and a working web version: [tryon/README.md](tryon/README.md)
+
 ## ลองเลย / Try it
 
 1. เปิดรูปตัวอย่าง [card.png](https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png) บนจอคอมหรือพิมพ์ออกมา (ใช้แทนลายเสื้อไปก่อน)

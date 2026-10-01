@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AR Try-On</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <canvas id="view"></canvas>
+  </div>
+  <video id="video" playsinline muted hidden></video>
+
+  <div id="start" class="overlay">
+    <h1>AR Try-On 👕</h1>
+    <p>ลองเสื้อผ่านกล้องเว็บแคม รองรับหลายคนพร้อมกัน<br /><small>Try on a shirt with your webcam</small></p>
+    <ol class="steps">
+      <li>ยืนห่างกล้องให้เห็นตั้งแต่หัวถึงสะโพก</li>
+      <li>หันหน้าตรง แขนกางออกเล็กน้อย ยืนนิ่ง 2 วินาที</li>
+      <li>เสื้อจะปรากฏและขยับตามตัว</li>
+    </ol>
+    <button id="start-button">เปิดกล้อง / Start</button>
+    <p id="loading" hidden></p>
+    <p id="error" class="error" hidden></p>
+  </div>
+
+  <div id="hud" hidden>
+    <div id="people"></div>
+    <div id="hint"></div>
+    <div id="controls">
+      <div class="swatches" id="swatches"></div>
+      <button id="sleeve" title="Sleeve length">แขนสั้น</button>
+      <button id="recalibrate" title="Measure everyone again">วัดตัวใหม่</button>
+      <button id="debug" title="Show masks and timings">Debug</button>
+    </div>
+    <div id="stats" hidden></div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

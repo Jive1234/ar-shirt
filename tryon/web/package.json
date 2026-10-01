@@ -1,0 +1,10 @@
+{
+  "name": "ar-tryon-web",
+  "private": true,
+  "type": "module",
+  "description": "Real-time webcam AR virtual try-on (MediaPipe + three.js). No build step; open index.html over https.",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "npx http-server -c-1 -p 8080 ."
+  }
+}
