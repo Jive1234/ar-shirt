@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+<ItemGroup><Compile Include="UnityStub.cs;Tests.cs" />
+<Compile Include="../../unity/Assets/ARTryOn/Scripts/Core/PoseTypes.cs;../../unity/Assets/ARTryOn/Scripts/Filtering/*.cs;../../unity/Assets/ARTryOn/Scripts/Calibration/*.cs;../../unity/Assets/ARTryOn/Scripts/Tracking/PersonTracker.cs" /></ItemGroup></Project>
