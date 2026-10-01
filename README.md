@@ -6,7 +6,7 @@
 A web AR page for a shirt: point a phone camera at the shirt print and a 3D model plus a text label appear on it.
 Plain static site (MindAR + three.js), no app install and no build step.
 
-> 🧪 Real-time webcam virtual try-on (Unity + MediaPipe) plan and boilerplate: [tryon/README.md](tryon/README.md)
+> 🧪 Real-time webcam virtual try-on plan, Unity boilerplate and a working web version: [tryon/README.md](tryon/README.md)
 
 ## ลองเลย / Try it
 

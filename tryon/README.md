@@ -1,5 +1,7 @@
 # AR Virtual Try-On (Webcam, Real-time) — แผนงาน สถาปัตยกรรม และโค้ดตั้งต้น
 
+> **มีเวอร์ชันเว็บที่ใช้งานได้แล้ว** ที่ [`web/`](web/README.md) (MediaPipe + three.js เปิดผ่านเบราว์เซอร์)
+>
 > สรุปสั้น: **ทำได้ แต่ต้องยอมรับ trade-off 4 จุด** (cloth physics, การวัดรอบอก, การลบเสื้อจริง 100%, จำนวนคนพร้อมกัน)
 > แนะนำ **Unity + MediaPipe Unity Plugin (Tasks API) + Magica Cloth 2 / Unity Cloth** สำหรับงานจริง
 > Python เหมาะแค่ทำวิจัย/ทดลองโมเดล ไม่เหมาะเป็นตัวโปรดักชัน
