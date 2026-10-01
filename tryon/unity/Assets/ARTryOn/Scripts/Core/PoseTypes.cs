@@ -74,10 +74,13 @@ namespace ARTryOn.Core
         public Texture CameraFrame;
         public readonly List<PersonObservation> People = new List<PersonObservation>();
 
-        /// <summary>Per-person soft masks from PoseLandmarker (output_segmentation_masks). Index matches People[i].MaskIndex.</summary>
+        /// <summary>
+        /// Per-person soft masks from PoseLandmarker (output_segmentation_masks), Unity orientation, unmirrored.
+        /// Index matches People[i].MaskIndex.
+        /// </summary>
         public readonly List<Texture> PersonMasks = new List<Texture>();
 
-        /// <summary>Optional multiclass mask (selfie_multiclass_256x256): R=clothes, G=body-skin, B=face/hair. Null if disabled.</summary>
+        /// <summary>Optional "clothes" probability from selfie_multiclass_256x256 (R channel), same layout as the person masks.</summary>
         public Texture ClassMask;
     }
 
@@ -93,5 +96,8 @@ namespace ARTryOn.Core
         float HorizontalFovDeg { get; }
 
         bool Mirrored { get; }
+
+        /// <summary>True when the camera texture is stored upside down (WebCamTexture.videoVerticallyMirrored).</summary>
+        bool CameraVerticallyFlipped { get; }
     }
 }
