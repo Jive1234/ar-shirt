@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AR Shirt</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="ar-container"></div>
+
+  <div id="start-screen" class="overlay">
+    <h1>AR Shirt 👕</h1>
+    <p>เล็งกล้องไปที่ลายบนเสื้อ<br /><small>Point your camera at the shirt print</small></p>
+    <button id="start-button">เริ่ม / Start</button>
+    <p id="error" class="error" hidden></p>
+  </div>
+
+  <div id="hint" class="hint" hidden>กำลังหาลายเสื้อ… / Looking for the print…</div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

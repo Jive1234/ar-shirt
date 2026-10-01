@@ -1,0 +1,55 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: system-ui, -apple-system, "Noto Sans Thai", sans-serif;
+  color: #fff;
+}
+
+#ar-container {
+  position: fixed;
+  inset: 0;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(160deg, #1b1f3b, #3a1c4a);
+  z-index: 10;
+}
+
+.overlay h1 { margin: 0; font-size: 2rem; }
+
+#start-button {
+  font-size: 1.2rem;
+  padding: 14px 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #ff5c8a;
+  color: #fff;
+  cursor: pointer;
+}
+
+#start-button:disabled { opacity: 0.6; }
+
+.error { color: #ffb3b3; max-width: 320px; }
+
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.9rem;
+  z-index: 5;
+}
