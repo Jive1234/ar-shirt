@@ -31,12 +31,67 @@ function makeLabel(text) {
   return mesh;
 }
 
-// รูปทรงเริ่มต้นเมื่อไม่มีไฟล์ .glb / Default shape when no .glb is set
+// ลายสกรีนหน้าอกเสื้อ / Chest print drawn on a canvas
+function makeChestPrint(text) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ff5c8a";
+  ctx.beginPath();
+  ctx.arc(128, 110, 80, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 72px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("AR", 128, 110);
+  ctx.fillStyle = "#222";
+  ctx.font = "bold 24px system-ui, sans-serif";
+  ctx.fillText(text, 128, 225);
+  return new THREE.CanvasTexture(canvas);
+}
+
+// เสื้อยืด 3D ตัวอย่าง ใช้เมื่อไม่มีไฟล์ .glb
+// Sample 3D T-shirt, used when no .glb is set
 function makeDefaultModel() {
-  return new THREE.Mesh(
-    new THREE.TorusKnotGeometry(0.2, 0.06, 128, 16),
-    new THREE.MeshStandardMaterial({ color: 0xff5c8a, metalness: 0.3, roughness: 0.3 })
+  const s = new THREE.Shape();
+  s.moveTo(-0.08, 0.3); // คอเสื้อซ้าย / left neckline
+  s.lineTo(-0.18, 0.3); // ไหล่ / shoulder
+  s.lineTo(-0.34, 0.17); // ปลายแขนเสื้อ / sleeve end
+  s.lineTo(-0.27, 0.07);
+  s.lineTo(-0.18, 0.13); // รักแร้ / armpit
+  s.lineTo(-0.18, -0.3); // ชายเสื้อ / hem
+  s.lineTo(0.18, -0.3);
+  s.lineTo(0.18, 0.13);
+  s.lineTo(0.27, 0.07);
+  s.lineTo(0.34, 0.17);
+  s.lineTo(0.18, 0.3);
+  s.lineTo(0.08, 0.3);
+  s.quadraticCurveTo(0, 0.2, -0.08, 0.3);
+
+  const geometry = new THREE.ExtrudeGeometry(s, {
+    depth: 0.04,
+    bevelEnabled: true,
+    bevelThickness: 0.015,
+    bevelSize: 0.015,
+    bevelSegments: 4,
+  });
+  geometry.center();
+
+  const shirt = new THREE.Group();
+  shirt.add(new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: CONFIG.shirtColor, roughness: 0.8 })
+  ));
+
+  const print = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.2, 0.2),
+    new THREE.MeshBasicMaterial({ map: makeChestPrint(CONFIG.label), transparent: true })
   );
+  print.position.set(0, -0.02, 0.041);
+  shirt.add(print);
+  return shirt;
 }
 
 async function loadModel() {
@@ -68,7 +123,7 @@ async function start() {
   anchor.group.add(model);
 
   const label = makeLabel(CONFIG.label);
-  label.position.set(0, 0.65, 0.1);
+  label.position.set(0, 0.55, 0.1);
   anchor.group.add(label);
 
   anchor.onTargetFound = () => { hint.hidden = true; };

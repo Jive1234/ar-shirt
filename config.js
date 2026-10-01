@@ -10,10 +10,14 @@ export const CONFIG = {
     "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind",
   // ตัวอย่างไฟล์ของตัวเอง / your own file, e.g. "./targets/shirt.mind"
 
-  // โมเดล .glb (ไม่บังคับ) ถ้าเว้นว่างจะแสดงรูปทรง 3D ที่สร้างในโค้ด
-  // Optional .glb model. Leave empty to show the built-in 3D shape.
+  // โมเดล .glb (ไม่บังคับ) ถ้าเว้นว่างจะแสดงเสื้อยืด 3D ตัวอย่าง
+  // Optional .glb model. Leave empty to show the sample 3D T-shirt.
   modelSrc: "", // e.g. "./models/mascot.glb"
   modelScale: 0.5,
+
+  // สีเสื้อยืด 3D ตัวอย่าง (ใช้เมื่อ modelSrc ว่าง)
+  // Color of the sample 3D T-shirt (used when modelSrc is empty)
+  shirtColor: "#2f6fed",
 
   // ข้อความที่ลอยเหนือลายเสื้อ / Text floating above the print
   label: "Hello AR Shirt!",
