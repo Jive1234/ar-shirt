@@ -1,56 +1,65 @@
+using System.Collections.Generic;
 using ARTryOn.Core;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace ARTryOn.Rendering
 {
     /// <summary>
-    /// Final image = camera frame + garments, with the real clothes that stick out from under the virtual
-    /// garment hidden (see ARTryOn/Composite shader for the per-pixel logic).
+    /// Final image = camera frame + shirts, with real clothing that sticks out from under the AR shirt hidden
+    /// (see the ARTryOn/Composite shader for the per-pixel logic).
     ///
-    /// The garment camera renders only the garment + occluder layers into a transparent render texture.
-    /// Doing the composite ourselves (instead of drawing the webcam as a background quad) keeps the masks,
-    /// the background plate and the garment alpha in one shader and works in Built-in RP and URP alike.
+    /// The garment camera renders only the shirts and occluders into a transparent, multisampled render texture;
+    /// the composite is a single Blit, so this works the same in Built-in RP and URP.
     /// </summary>
     public sealed class TryOnCompositor : MonoBehaviour
     {
+        const int MaxMasks = 3;
+
         [SerializeField] MonoBehaviour poseSourceBehaviour; // IPoseSource
         [SerializeField] Camera garmentCamera;
         [SerializeField] Material compositeMaterial;        // ARTryOn/Composite
-        [SerializeField] RawImage output;
 
         [Header("Real-clothing removal")]
-        [Tooltip("Capture a clean background when nobody has been in frame this long. Requires a fixed camera.")]
-        [SerializeField] float emptySecondsForPlate = 1.0f;
-        [Tooltip("How far (in output pixels) the garment colour may be pushed into uncovered real clothing.")]
-        [SerializeField] float edgeFillRadiusPx = 24f;
+        [Tooltip("How far (in output pixels) the shirt colour may be extended over uncovered real clothing.")]
+        [SerializeField] float edgeFillRadiusPx = 40f;
+        [Tooltip("Kiosk with a fixed camera only: replace uncovered real clothing with a clean background captured " +
+                 "while nobody is in view. Off by default because it also erases real arms in long sleeves that " +
+                 "stick out past a short AR sleeve.")]
+        [SerializeField] bool useBackgroundPlate = false;
+        [SerializeField] bool debugMasks = false;
+
+        /// <summary>The composited image. Draw it full-screen (TryOnHud does).</summary>
+        public RenderTexture Output => _outRT;
 
         IPoseSource _source;
         RenderTexture _garmentRT, _outRT, _plate;
-        Texture _cameraFrame;
         bool _hasPlate;
         double _emptySince = -1;
+        readonly Vector4[] _zones = new Vector4[MaxMasks];
 
-        static readonly int CameraTexId = Shader.PropertyToID("_MainTex");
         static readonly int GarmentTexId = Shader.PropertyToID("_GarmentTex");
         static readonly int ClassMaskId = Shader.PropertyToID("_ClassMask");
         static readonly int PlateId = Shader.PropertyToID("_PlateTex");
         static readonly int HasClassMaskId = Shader.PropertyToID("_HasClassMask");
         static readonly int HasPlateId = Shader.PropertyToID("_HasPlate");
-        static readonly int MirrorMaskId = Shader.PropertyToID("_MirrorMask");
+        static readonly int MirrorId = Shader.PropertyToID("_Mirror");
+        static readonly int FlipCameraYId = Shader.PropertyToID("_FlipCameraY");
         static readonly int FillRadiusId = Shader.PropertyToID("_FillRadius");
+        static readonly int MaskCountId = Shader.PropertyToID("_PersonMaskCount");
+        static readonly int ZonesId = Shader.PropertyToID("_Zones");
+        static readonly int ZoneCountId = Shader.PropertyToID("_ZoneCount");
+        static readonly int DebugId = Shader.PropertyToID("_Debug");
         static readonly int[] PersonMaskIds =
         {
-            Shader.PropertyToID("_PersonMask0"), Shader.PropertyToID("_PersonMask1"),
-            Shader.PropertyToID("_PersonMask2"), Shader.PropertyToID("_PersonMask3"),
+            Shader.PropertyToID("_PersonMask0"), Shader.PropertyToID("_PersonMask1"), Shader.PropertyToID("_PersonMask2"),
         };
-        static readonly int MaskCountId = Shader.PropertyToID("_PersonMaskCount");
+
+        public bool DebugMasks { get => debugMasks; set => debugMasks = value; }
 
         void Awake()
         {
             _source = (IPoseSource)poseSourceBehaviour;
-            _source.FrameReady += OnFrame;
-            // We call Render() ourselves so the garment is drawn for exactly the frame being shown.
+            // Rendered manually in Render() so the shirts are drawn for exactly the frame being shown.
             garmentCamera.enabled = false;
             garmentCamera.clearFlags = CameraClearFlags.SolidColor;
             garmentCamera.backgroundColor = new Color(0, 0, 0, 0);
@@ -58,33 +67,36 @@ namespace ARTryOn.Rendering
 
         void OnDestroy()
         {
-            if (_source != null) _source.FrameReady -= OnFrame;
             Release(ref _garmentRT);
             Release(ref _outRT);
             Release(ref _plate);
         }
 
-        // Runs after TryOnManager has posed the garments for this frame (set Script Execution Order so
-        // TryOnManager comes first, or subscribe this component later).
-        void OnFrame(PoseFrame frame)
+        /// <summary>Called by TryOnManager after the shirts are posed for this frame.</summary>
+        /// <param name="zones">Viewport boxes (x0, y0, x1, y1) where real clothing may be replaced.</param>
+        public void Render(PoseFrame frame, IReadOnlyList<Vector4> zones)
         {
-            _cameraFrame = frame.CameraFrame != null ? frame.CameraFrame : _source.CameraTexture;
-            int w = _cameraFrame.width, h = _cameraFrame.height;
-            Ensure(ref _garmentRT, w, h, 24, true);
-            Ensure(ref _outRT, w, h, 0, false);
+            Texture cameraTex = frame.CameraFrame != null ? frame.CameraFrame : _source.CameraTexture;
+            if (cameraTex == null) return;
+            int w = cameraTex.width, h = cameraTex.height;
+            Ensure(ref _garmentRT, w, h, 24, 4);
+            Ensure(ref _outRT, w, h, 0, 1);
 
-            UpdatePlate(frame);
+            if (useBackgroundPlate) UpdatePlate(frame, cameraTex);
 
             garmentCamera.targetTexture = _garmentRT;
-            garmentCamera.Render(); // URP 14+: use RenderPipeline.SubmitRenderRequest instead
+            garmentCamera.Render(); // URP 14+: RenderPipeline.SubmitRenderRequest(garmentCamera, ...) instead
+            garmentCamera.targetTexture = null;
 
             var m = compositeMaterial;
             m.SetTexture(GarmentTexId, _garmentRT);
-            m.SetFloat(MirrorMaskId, _source.Mirrored ? 1f : 0f);
+            m.SetFloat(MirrorId, _source.Mirrored ? 1f : 0f);
+            m.SetFloat(FlipCameraYId, _source.CameraVerticallyFlipped ? 1f : 0f);
             m.SetFloat(FillRadiusId, edgeFillRadiusPx);
+            m.SetFloat(DebugId, debugMasks ? 1f : 0f);
 
-            int count = Mathf.Min(frame.PersonMasks.Count, PersonMaskIds.Length);
-            for (int i = 0; i < PersonMaskIds.Length; i++)
+            int count = Mathf.Min(frame.PersonMasks.Count, MaxMasks);
+            for (int i = 0; i < MaxMasks; i++)
                 m.SetTexture(PersonMaskIds[i], i < count ? frame.PersonMasks[i] : Texture2D.blackTexture);
             m.SetInt(MaskCountId, count);
 
@@ -93,33 +105,32 @@ namespace ARTryOn.Rendering
             m.SetTexture(PlateId, _hasPlate ? _plate : (Texture)Texture2D.blackTexture);
             m.SetFloat(HasPlateId, _hasPlate ? 1f : 0f);
 
-            Graphics.Blit(_cameraFrame, _outRT, m);
-            output.texture = _outRT;
-            // The webcam frame is not mirrored; the shader samples it mirrored, so the RawImage needs no flip.
+            int zc = Mathf.Min(zones.Count, MaxMasks);
+            for (int i = 0; i < MaxMasks; i++) _zones[i] = i < zc ? zones[i] : Vector4.zero;
+            m.SetVectorArray(ZonesId, _zones);
+            m.SetInt(ZoneCountId, zc);
+
+            Graphics.Blit(cameraTex, _outRT, m);
         }
 
-        void UpdatePlate(PoseFrame frame)
+        void UpdatePlate(PoseFrame frame, Texture cameraTex)
         {
-            if (frame.People.Count > 0)
-            {
-                _emptySince = -1;
-                return;
-            }
+            if (frame.People.Count > 0) { _emptySince = -1; return; }
             if (_emptySince < 0) _emptySince = frame.Timestamp;
-            if (frame.Timestamp - _emptySince < emptySecondsForPlate) return;
-
-            Ensure(ref _plate, _cameraFrame.width, _cameraFrame.height, 0, false);
-            Graphics.Blit(_cameraFrame, _plate);
+            if (frame.Timestamp - _emptySince < 1.0) return;
+            Ensure(ref _plate, cameraTex.width, cameraTex.height, 0, 1);
+            Graphics.Blit(cameraTex, _plate); // refreshed every second while the scene is empty
+            _emptySince = frame.Timestamp;
             _hasPlate = true;
         }
 
-        static void Ensure(ref RenderTexture rt, int w, int h, int depth, bool msaa)
+        static void Ensure(ref RenderTexture rt, int w, int h, int depth, int msaa)
         {
             if (rt != null && rt.width == w && rt.height == h) return;
             Release(ref rt);
             rt = new RenderTexture(w, h, depth, RenderTextureFormat.ARGB32)
             {
-                antiAliasing = msaa ? 4 : 1, // soft garment edges matter more than anything else for realism
+                antiAliasing = msaa, // soft shirt edges matter more than anything else for realism
                 wrapMode = TextureWrapMode.Clamp,
             };
             rt.Create();
@@ -129,7 +140,7 @@ namespace ARTryOn.Rendering
         {
             if (rt == null) return;
             rt.Release();
-            Object.Destroy(rt);
+            Destroy(rt);
             rt = null;
         }
     }

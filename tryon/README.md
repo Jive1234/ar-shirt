@@ -98,17 +98,20 @@ inference 2 คน + mask ~12–20 ms (บน worker) · smoothing + tracking < 
 | `Scripts/Filtering/OneEuroFilter.cs`, `PoseSmoother.cs` | **Smoothing filter ลดการสั่น** (scalar + vector), visibility-aware |
 | `Scripts/Tracking/PersonTracker.cs` | **Multi-person** ID คงที่, หมดเวลาแล้วลบ |
 | `Scripts/Calibration/CalibrationStateMachine.cs` | **State machine calibration 1.5 วิ** + เหตุผลที่ท่าไม่ผ่าน (ใช้แสดงคำแนะนำบนจอ) |
-| `Scripts/Garment/GarmentFitter.cs` | **ปรับ bone length/width + blend shape** และขับท่าทุกเฟรม |
+| `Scripts/Garment/ParametricShirt.cs`, `BodyFit.cs` | **เสื้อสร้างจากโค้ด** (ไม่ต้องมีโมเดล 3D) ตามขนาดที่วัดได้ + ผ้า Verlet ที่ชายเสื้อ/ปลายแขน, ตำแหน่ง 3D จากภาพ |
+| `Scripts/Garment/GarmentFitter.cs` | (ทางเลือก) เสื้อ rigged: **ปรับ bone length/width + blend shape** และขับท่าทุกเฟรม |
 | `Scripts/Garment/BodyOccluder.cs` | occluder มือ/แขน/หัว |
 | `Scripts/Rendering/TryOnCompositor.cs` | เรนเดอร์ชุดลง RT, จับ background plate, เรียก composite |
 | `Scripts/TryOnManager.cs` | ต่อทุกส่วนเข้าด้วยกัน, สร้างชุดต่อคนหลัง calibrate |
+| `Scripts/Rendering/TryOnHud.cs` | แสดงภาพ + ปุ่ม/คำแนะนำภาษาไทย (ไม่ต้องมี Canvas) |
+| `Editor/ARTryOnSetup.cs` | เมนู *AR Try-On → Download Models / Create Scene* ตั้งค่าฉากให้ในคลิกเดียว |
 | `Shaders/DepthOnlyOccluder.shader` | เขียน depth อย่างเดียว |
 | `Shaders/Composite.shader` | **occlusion / ลบผ้าจริง / วางชุด** |
 | `../tests/LogicTests/` | ทดสอบ filter, calibration, tracker (รันด้วย `dotnet run` ไม่ต้องมี Unity) |
 
 ผลทดสอบล่าสุด (`dotnet run` ใน `tests/LogicTests`): **15/15 ผ่าน** — OneEuro ลด jitter เหลือ 32% และไม่ lag ตอนขยับเร็ว, calibrate ใน 1.63 วิ ค่าคลาด < 2 ซม., ปฏิเสธ T-pose และคนที่เดิน, 2 คนสลับลำดับทุกเฟรมยังได้ ID และค่าวัดถูกคน
 
-ยังไม่ได้ทดสอบ (ไม่มี Unity/กล้องในเครื่องที่เขียน): `MediaPipePoseSource`, `GarmentFitter.Drive`, compositor และ shader — ต้องลองใน Unity Editor จริง
+คอมไพล์ผ่านกับ Unity 2021.3 reference DLL และซอร์ส runtime จริงของ MediaPipeUnityPlugin v0.16.3 แล้ว แต่ยังไม่ได้รันใน Unity Editor จริง (ไม่มี Unity/กล้องในเครื่องที่เขียน) จึงยังไม่ได้ทดสอบพฤติกรรมของ `MediaPipePoseSource`, compositor, shader และ FPS จริง
 
 ---
 
@@ -144,15 +147,21 @@ clothes mask ไม่ได้มากับ PoseLandmarker ต้องรั
 
 ---
 
-## 7. ขั้นตอนติดตั้ง
+## 7. ขั้นตอนติดตั้ง (Windows)
 
-1. สร้างโปรเจกต์ Unity 2022.3 LTS (URP) แล้วติดตั้ง MediaPipeUnityPlugin (.tgz จาก Releases) ตาม README ของ plugin
-2. วาง `pose_landmarker_full.bytes` ใน `Assets/StreamingAssets`
-3. คัดลอก `unity/Assets/ARTryOn` เข้าโปรเจกต์ แก้ `MediaPipePoseSource.cs` ให้ตรง API ของเวอร์ชันที่ติดตั้ง (จุดที่ต้องเช็กมี comment `VERIFY`)
-4. ฉาก: GameObject มี `MediaPipePoseSource`, `TryOnManager`, `TryOnCompositor`; Camera “Garment” (ที่ origin, มองแกน +Z, culling เฉพาะ layer Garment) ; Canvas + RawImage เต็มจอ ; Material จาก `ARTryOn/Composite`
-5. Prefab เสื้อ: ใส่ `GarmentFitter` ที่ root, ผูกกระดูก, layer Garment ; Prefab occluder: `BodyOccluder` + material `ARTryOn/DepthOnlyOccluder`
-6. Script Execution Order: `TryOnManager` ก่อน `TryOnCompositor`
-7. ถ้ากล้องภาพกลับหัวบางเครื่อง เช็ก `WebCamTexture.videoVerticallyMirrored`
+1. ติดตั้ง [Unity Hub](https://unity.com/download) แล้วล็อกอิน จากนั้นใช้ Hub ติดตั้ง **Unity 2022.3 LTS**
+2. สร้างโปรเจกต์ใหม่ด้วยเทมเพลต **3D (Built-in Render Pipeline)** (ใช้ URP ก็ได้ เพราะเมนูจะเลือก shader ให้เอง)
+3. โหลด `com.github.homuler.mediapipe-0.16.3.tgz` จาก [MediaPipeUnityPlugin v0.16.3](https://github.com/homuler/MediaPipeUnityPlugin/releases/tag/v0.16.3) แล้วเปิด Window → Package Manager → `+` → *Add package from tarball…* และเลือกไฟล์นั้น
+4. คัดลอกโฟลเดอร์ `tryon/unity/Assets/ARTryOn` ไปไว้ใน `Assets/` ของโปรเจกต์
+5. เมนู **AR Try-On → Download Models**: โหลดโมเดล pose และ segmenter ลง `Assets/StreamingAssets`
+6. เมนู **AR Try-On → Create Scene**: สร้าง material, กล้อง, แสง และ object ที่ต่อสคริปต์ไว้ครบ แล้วบันทึกเป็น `Assets/ARTryOn/TryOn.unity`
+7. กด **Play** แล้วยืนตรงหน้ากล้อง ให้เห็นตั้งแต่หัวถึงสะโพก ปล่อยแขนลงข้างตัว ค้างไว้ประมาณ 1.5 วินาที เสื้อจะขึ้นเอง
+   - ปุ่มบนจอ: เปลี่ยนสี, แขนสั้น/ยาว (S), วัดตัวใหม่ (R), Debug (D) ซึ่งแสดง FPS และเวลา inference
+   - ถ้าเสื้อใหญ่หรือเล็กไปสำหรับทุกคน ให้ปรับ `Horizontal Fov Deg` ใน `MediaPipePoseSource`
+   - ถ้า FPS ต่ำ ให้ลด `Requested Width/Height` เป็น 960×540 หรือปิด `Use Clothes Mask`
+8. ส่งให้เครื่องอื่นใช้: File → Build Settings → Windows → Build แล้วส่งทั้งโฟลเดอร์ที่ได้ (exe + `_Data`)
+
+ไม่ต้องมีโมเดล 3D: เสื้อเป็น `ParametricShirt` ที่สร้างจากโค้ดตามขนาดตัวที่วัดได้ ถ้ามีเสื้อ rigged ภายหลัง ให้ใส่ prefab ที่มี `GarmentFitter` ในช่อง `Garment Prefab` ของ `TryOnManager`
 
 ---
 

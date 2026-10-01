@@ -106,6 +106,15 @@ namespace ARTryOn.Calibration
             SetState(CalibrationState.WaitingForPerson);
         }
 
+        /// <summary>Skip the pose check and accept these measurements (testing, or a "quick start" option).</summary>
+        public void Force(BodyMeasurements m)
+        {
+            Result = m;
+            Progress = 1f;
+            SetState(CalibrationState.Calibrated);
+            Calibrated?.Invoke(m);
+        }
+
         /// <param name="raw">Unsmoothed observation (used for the stillness test), or null if the person was not detected.</param>
         /// <param name="smoothed">Smoothed observation (used for measurements), or null if not detected.</param>
         public void Tick(PersonObservation raw, PersonObservation smoothed, double t)
